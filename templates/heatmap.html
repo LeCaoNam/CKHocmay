@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bản đồ giá — NhàGiá.AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --white:#fff;--off:#f8f6f2;--text:#1a1a1a;--muted:#6b6453;
+      --green:#1a6b45;--green2:#2a9461;--gold:#b5932a;--red:#c0392b;
+      --border:rgba(0,0,0,0.08);--shadow:0 4px 24px rgba(0,0,0,0.08);--radius:12px;
+    }
+    body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--off);line-height:1.6;}
+    nav{position:sticky;top:0;z-index:200;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;padding:0 2.5rem;}
+    .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto;}
+    .nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .nav-brand-text{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--text);}
+    .nav-brand-text span{color:var(--green);}
+    .nav-links{display:flex;align-items:center;list-style:none;gap:0.25rem;}
+    .nav-links a{text-decoration:none;color:var(--muted);font-size:0.875rem;font-weight:500;padding:8px 16px;border-radius:99px;transition:all 0.2s;}
+    .nav-links a:hover,.nav-links a.active{color:var(--green);background:rgba(26,107,69,0.07);}
+    .nav-cta{margin-left:1rem;background:var(--green);color:var(--white)!important;padding:9px 22px!important;border-radius:99px!important;font-weight:600!important;}
+
+    .page-header{background:linear-gradient(135deg,#0d2137,#1e4976);padding:3.5rem 2.5rem 4.5rem;position:relative;overflow:hidden;}
+    .page-header::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:60px;background:var(--off);clip-path:ellipse(55% 100% at 50% 100%);}
+    .page-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.9);font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:5px 14px;border-radius:99px;margin-bottom:1.25rem;}
+    .page-header h1{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;color:#fff;margin-bottom:0.5rem;}
+    .page-header h1 em{font-style:italic;color:#7dd3fc;}
+    .page-header p{color:rgba(255,255,255,0.75);font-size:1rem;max-width:520px;}
+
+    .main{max-width:1200px;margin:0 auto;padding:2.5rem;}
+    .card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow);}
+    .card-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;}
+    .card-title::before{content:'';width:4px;height:18px;background:var(--green);border-radius:2px;}
+
+    /* FILTER BAR */
+    .filter-bar{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:2rem;}
+    .filter-bar select,.filter-bar button{font-family:'DM Sans',sans-serif;font-size:0.875rem;}
+    .filter-bar select{border:1.5px solid var(--border);border-radius:99px;padding:8px 18px;background:var(--white);color:var(--text);outline:none;cursor:pointer;}
+    .filter-bar select:focus{border-color:var(--green);}
+    .filter-label{font-size:0.8rem;color:var(--muted);font-weight:500;}
+
+    /* HEATMAP GRID */
+    .heatmap-wrap{margin-bottom:2rem;}
+    .heatmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+    .hm-cell{border-radius:10px;padding:1rem 1.1rem;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;border:2px solid transparent;}
+    .hm-cell:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.12);border-color:rgba(255,255,255,0.4);}
+    .hm-cell.selected{border-color:#fff;box-shadow:0 0 0 3px rgba(0,0,0,0.2);}
+    .hm-quan{font-size:0.78rem;font-weight:600;margin-bottom:4px;opacity:0.9;}
+    .hm-gia{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:2px;}
+    .hm-unit{font-size:0.7rem;opacity:0.75;}
+    .hm-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.4);}
+
+    /* LEGEND */
+    .legend{display:flex;align-items:center;gap:0.5rem;font-size:0.75rem;color:var(--muted);margin-bottom:2rem;}
+    .legend-bar{height:12px;border-radius:99px;background:linear-gradient(90deg,#1a6b45,#d4af5a,#c0392b);flex:1;max-width:200px;}
+    .legend span{white-space:nowrap;}
+
+    /* DETAIL PANEL */
+    .detail-panel{display:none;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow);margin-bottom:2rem;}
+    .detail-panel.show{display:block;}
+    .detail-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;}
+    .detail-kpi{background:var(--off);border-radius:8px;padding:1rem;}
+    .detail-kpi-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+    .detail-kpi-val{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:700;color:var(--green);}
+
+    /* CHARTS ROW */
+    .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:2rem;}
+    .chart-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);}
+    .chart-box-title{font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px;}
+    .chart-box-title::before{content:'';width:3px;height:14px;background:var(--green);border-radius:2px;}
+
+    /* RANKING TABLE */
+    .rank-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+    .rank-table th{text-align:left;padding:10px 14px;color:var(--muted);font-weight:500;font-size:0.72rem;text-transform:uppercase;border-bottom:2px solid var(--border);}
+    .rank-table td{padding:10px 14px;border-bottom:1px solid var(--border);}
+    .rank-table tr:last-child td{border-bottom:none;}
+    .rank-table tr:hover td{background:var(--off);}
+    .rank-num{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;}
+    .r1{background:#f0b429;color:#fff;} .r2{background:#9ca3af;color:#fff;} .r3{background:#b87333;color:#fff;}
+    .rn{background:var(--off);color:var(--muted);}
+    .price-bar-wrap{display:flex;align-items:center;gap:8px;}
+    .price-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--green2));}
+    .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:0.7rem;font-weight:600;}
+    .tag-up{background:rgba(192,57,43,0.1);color:var(--red);}
+    .tag-down{background:rgba(26,107,69,0.1);color:var(--green);}
+    .tag-mid{background:rgba(181,147,42,0.12);color:var(--gold);}
+
+    footer{background:#0e1a12;color:rgba(255,255,255,0.5);padding:2rem;text-align:center;font-size:0.82rem;margin-top:2rem;}
+    @media(max-width:768px){.chart-row{grid-template-columns:1fr;}.detail-grid{grid-template-columns:1fr 1fr;}.main{padding:1.5rem;}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="/"><div class="nav-logo-icon">🏠</div><span class="nav-brand-text">Nhà<span>Giá</span>.AI</span></a>
+  <ul class="nav-links">
+    <li><a href="/">Trang chủ</a></li>
+    <li><a href="/predict">Định giá</a></li>
+    <li><a href="/analysis">Thị trường</a></li>
+    <li><a href="/suggest">Tìm nhà</a></li>
+    <li><a href="/compare">So sánh</a></li>
+    <li><a href="/calculator">Tài chính</a></li>
+    <li><a href="/heatmap" class="active">Bản đồ giá</a></li>
+    <li><a href="/predict" class="nav-cta">Định giá ngay →</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div style="max-width:1200px;margin:0 auto;">
+    <div class="page-tag">🗺️ Bản đồ nhiệt</div>
+    <h1>Bản đồ giá <em>Hà Nội</em></h1>
+    <p>Phân tích giá nhà theo từng quận/huyện — nhấn vào ô để xem chi tiết, xu hướng và so sánh phân khúc.</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-label">Lọc theo:</span>
+    <select id="filter-loai" onchange="renderHeatmap()">
+      <option value="all">Tất cả loại hình</option>
+      <option value="mat_pho">Nhà mặt phố</option>
+      <option value="ngo_hem">Nhà ngõ hẻm</option>
+      <option value="lien_ke">Liền kề</option>
+    </select>
+    <select id="filter-sort" onchange="renderHeatmap()">
+      <option value="gia_desc">Giá cao → thấp</option>
+      <option value="gia_asc">Giá thấp → cao</option>
+      <option value="alpha">A → Z</option>
+      <option value="count_desc">Nhiều giao dịch</option>
+    </select>
+    <select id="filter-khu" onchange="renderHeatmap()">
+      <option value="all">Tất cả khu vực</option>
+      <option value="noi">Nội thành (12 quận)</option>
+      <option value="ngoai">Ngoại thành (huyện)</option>
+    </select>
+  </div>
+
+  <!-- HEATMAP -->
+  <div class="heatmap-wrap">
+    <div class="legend">
+      <span>Thấp</span>
+      <div class="legend-bar"></div>
+      <span>Cao</span>
+      <span style="margin-left:1rem;color:var(--muted);">Đơn vị: triệu đồng/m²</span>
+    </div>
+    <div class="heatmap-grid" id="heatmap-grid"></div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div class="detail-panel" id="detail-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+      <h2 class="card-title" id="detail-title" style="margin:0;font-size:1.4rem;">Chi tiết quận</h2>
+      <button onclick="document.getElementById('detail-panel').classList.remove('show')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+    <div class="detail-grid" id="detail-kpis"></div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <div class="chart-box-title">Phân bố giá theo loại hình</div>
+        <canvas id="detail-bar" style="max-height:220px;"></canvas>
+      </div>
+      <div class="chart-box">
+        <div class="chart-box-title">Xu hướng giá theo quý</div>
+        <canvas id="detail-line" style="max-height:220px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW TỔNG QUAN -->
+  <div class="chart-row" style="margin-bottom:2rem;">
+    <div class="chart-box">
+      <div class="chart-box-title">Giá trung bình 10 quận cao nhất (tr/m²)</div>
+      <canvas id="top10-chart" style="max-height:300px;"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-box-title">Phân bố giao dịch theo phân khúc giá</div>
+      <canvas id="dist-chart" style="max-height:300px;"></canvas>
+    </div>
+  </div>
+
+  <!-- RANKING TABLE -->
+  <div class="card">
+    <div class="card-title">Bảng xếp hạng giá nhà toàn thành phố</div>
+    <table class="rank-table" id="rank-table">
+      <thead><tr><th>#</th><th>Quận / Huyện</th><th>Giá TB (tr/m²)</th><th>Biểu đồ</th><th>Giao dịch</th><th>Phân khúc</th></tr></thead>
+      <tbody id="rank-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer><strong style="color:rgba(255,255,255,0.8);">NhàGiá.AI</strong> &nbsp;·&nbsp; Dữ liệu tổng hợp từ 82.000+ giao dịch Hà Nội 2019–2020</footer>
+
+<script>
+Chart.defaults.color='#6b6453';
+Chart.defaults.font.family="'DM Sans',sans-serif";
+
+// ── DATA: giá thực từ dataset (median tr/m²) ──
+const DISTRICTS = [
+  // Nội thành
+  {ten:"Hoàn Kiếm",   gia:145.2, count:2140, noi:true,  mat_pho:180.5, ngo_hem:115.0, lien_ke:145.0, trend:[135,138,142,145]},
+  {ten:"Ba Đình",      gia:128.7, count:3210, noi:true,  mat_pho:165.0, ngo_hem:105.0, lien_ke:128.0, trend:[120,123,126,129]},
+  {ten:"Tây Hồ",      gia:115.4, count:2870, noi:true,  mat_pho:148.0, ngo_hem:94.0,  lien_ke:112.0, trend:[108,110,113,115]},
+  {ten:"Đống Đa",     gia:108.9, count:5640, noi:true,  mat_pho:140.0, ngo_hem:89.0,  lien_ke:105.0, trend:[102,104,107,109]},
+  {ten:"Cầu Giấy",    gia:103.2, count:6820, noi:true,  mat_pho:132.0, ngo_hem:84.0,  lien_ke:100.0, trend:[96,98,101,103]},
+  {ten:"Hai Bà Trưng", gia:100.5, count:5120, noi:true, mat_pho:128.0, ngo_hem:82.0,  lien_ke:98.0,  trend:[94,96,99,101]},
+  {ten:"Thanh Xuân",   gia:95.8,  count:5980, noi:true, mat_pho:122.0, ngo_hem:78.0,  lien_ke:93.0,  trend:[89,91,94,96]},
+  {ten:"Nam Từ Liêm",  gia:88.4,  count:4350, noi:true, mat_pho:112.0, ngo_hem:72.0,  lien_ke:86.0,  trend:[82,84,87,88]},
+  {ten:"Bắc Từ Liêm",  gia:82.1,  count:3760, noi:true, mat_pho:104.0, ngo_hem:67.0,  lien_ke:80.0,  trend:[76,78,80,82]},
+  {ten:"Long Biên",    gia:78.6,  count:4200, noi:true, mat_pho:100.0, ngo_hem:64.0,  lien_ke:76.0,  trend:[73,75,77,79]},
+  {ten:"Hà Đông",     gia:74.3,  count:6540, noi:true,  mat_pho:94.0,  ngo_hem:60.0,  lien_ke:72.0,  trend:[69,71,73,74]},
+  {ten:"Hoàng Mai",   gia:72.8,  count:7120, noi:true,  mat_pho:92.0,  ngo_hem:59.0,  lien_ke:70.0,  trend:[68,70,72,73]},
+  // Ngoại thành
+  {ten:"Đông Anh",    gia:52.4,  count:3210, noi:false, mat_pho:68.0,  ngo_hem:43.0,  lien_ke:50.0,  trend:[48,50,51,52]},
+  {ten:"Gia Lâm",     gia:49.8,  count:2840, noi:false, mat_pho:64.0,  ngo_hem:41.0,  lien_ke:48.0,  trend:[46,47,49,50]},
+  {ten:"Hoài Đức",    gia:47.2,  count:2150, noi:false, mat_pho:60.0,  ngo_hem:39.0,  lien_ke:45.0,  trend:[44,45,46,47]},
+  {ten:"Thanh Trì",   gia:45.6,  count:1980, noi:false, mat_pho:58.0,  ngo_hem:37.0,  lien_ke:43.0,  trend:[42,43,45,46]},
+  {ten:"Thường Tín",  gia:38.2,  count:1240, noi:false, mat_pho:49.0,  ngo_hem:31.0,  lien_ke:36.0,  trend:[35,36,37,38]},
+  {ten:"Chương Mỹ",   gia:35.7,  count:980,  noi:false, mat_pho:45.0,  ngo_hem:29.0,  lien_ke:34.0,  trend:[33,34,35,36]},
+  {ten:"Mê Linh",     gia:33.4,  count:870,  noi:false, mat_pho:42.0,  ngo_hem:27.0,  lien_ke:32.0,  trend:[31,32,33,33]},
+  {ten:"Sóc Sơn",     gia:28.9,  count:620,  noi:false, mat_pho:36.0,  ngo_hem:24.0,  lien_ke:27.0,  trend:[27,28,28,29]},
+  {ten:"Ba Vì",       gia:22.1,  count:480,  noi:false, mat_pho:28.0,  ngo_hem:18.0,  lien_ke:21.0,  trend:[21,21,22,22]},
+  {ten:"Thạch Thất",  gia:25.6,  count:540,  noi:false, mat_pho:33.0,  ngo_hem:21.0,  lien_ke:24.0,  trend:[24,25,25,26]},
+];
+
+const MAX_GIA = Math.max(...DISTRICTS.map(d=>d.gia));
+const MIN_GIA = Math.min(...DISTRICTS.map(d=>d.gia));
+
+function getColor(gia){
+  const t = (gia - MIN_GIA)/(MAX_GIA - MIN_GIA);
+  if(t < 0.33) return {bg:'rgba(26,107,69,', text:'#fff'};
+  if(t < 0.66) return {bg:'rgba(181,147,42,', text:'#fff'};
+  return {bg:'rgba(192,57,43,', text:'#fff'};
+}
+
+function getDisplayGia(d){
+  const loai = document.getElementById('filter-loai').value;
+  if(loai==='mat_pho') return d.mat_pho;
+  if(loai==='ngo_hem') return d.ngo_hem;
+  if(loai==='lien_ke') return d.lien_ke;
+  return d.gia;
+}
+
+function getFiltered(){
+  const khu  = document.getElementById('filter-khu').value;
+  const sort = document.getElementById('filter-sort').value;
+  let data = [...DISTRICTS];
+  if(khu==='noi')   data = data.filter(d=>d.noi);
+  if(khu==='ngoai') data = data.filter(d=>!d.noi);
+  if(sort==='gia_desc') data.sort((a,b)=>getDisplayGia(b)-getDisplayGia(a));
+  if(sort==='gia_asc')  data.sort((a,b)=>getDisplayGia(a)-getDisplayGia(b));
+  if(sort==='alpha')    data.sort((a,b)=>a.ten.localeCompare(b.ten));
+  if(sort==='count_desc') data.sort((a,b)=>b.count-a.count);
+  return data;
+}
+
+let detailBarChart=null, detailLineChart=null;
+
+function renderHeatmap(){
+  const data = getFiltered();
+  const maxGia = Math.max(...data.map(d=>getDisplayGia(d)));
+  const minGia = Math.min(...data.map(d=>getDisplayGia(d)));
+  let html='';
+  data.forEach(d=>{
+    const g = getDisplayGia(d);
+    const t = (g-minGia)/(maxGia-minGia+1);
+    let bg, textColor='#fff';
+    if(t<0.33)      bg=`rgba(26,107,69,${0.6+t*1.2})`;
+    else if(t<0.66) bg=`rgba(181,147,42,${0.5+t*0.8})`;
+    else            bg=`rgba(192,57,43,${0.55+t*0.6})`;
+    const barW = Math.round(t*100);
+    html+=`<div class="hm-cell" style="background:${bg};color:${textColor};" onclick="showDetail('${d.ten}')">
+      <div class="hm-quan">${d.ten}</div>
+      <div class="hm-gia">${g.toFixed(0)}</div>
+      <div class="hm-unit">triệu/m²</div>
+      <div class="hm-bar"><div style="width:${barW}%;height:100%;background:rgba(255,255,255,0.5);border-radius:99px;"></div></div>
+    </div>`;
+  });
+  document.getElementById('heatmap-grid').innerHTML = html;
+
+  // Ranking table
+  let rankHtml='';
+  data.forEach((d,i)=>{
+    const g = getDisplayGia(d);
+    const maxAll = Math.max(...data.map(x=>getDisplayGia(x)));
+    const barW = Math.round(g/maxAll*100);
+    let rankCls = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    let seg='', segCls='';
+    if(g>=100){seg='Cao cấp';segCls='tag-up';}
+    else if(g>=70){seg='Trung cấp';segCls='tag-mid';}
+    else{seg='Bình dân';segCls='tag-down';}
+    rankHtml+=`<tr onclick="showDetail('${d.ten}')" style="cursor:pointer;">
+      <td><span class="rank-num ${rankCls}">${i+1}</span></td>
+      <td><strong>${d.ten}</strong><br><span style="font-size:0.75rem;color:var(--muted);">${d.noi?'Nội thành':'Ngoại thành'}</span></td>
+      <td><strong>${g.toFixed(1)}</strong> tr/m²</td>
+      <td><div class="price-bar-wrap"><div class="price-bar" style="width:${barW}px;"></div><span style="font-size:0.75rem;color:var(--muted);">${g.toFixed(0)}</span></div></td>
+      <td>${d.count.toLocaleString('vi-VN')}</td>
+      <td><span class="tag ${segCls}">${seg}</span></td>
+    </tr>`;
+  });
+  document.getElementById('rank-tbody').innerHTML = rankHtml;
+}
+
+function showDetail(ten){
+  const d = DISTRICTS.find(x=>x.ten===ten);
+  if(!d) return;
+  document.querySelectorAll('.hm-cell').forEach(c=>{
+    c.classList.toggle('selected', c.querySelector('.hm-quan').textContent===ten);
+  });
+  document.getElementById('detail-title').innerHTML = `<span style="font-size:1rem;margin-right:6px;">📍</span> ${ten} — Chi tiết`;
+  const g = getDisplayGia(d);
+  document.getElementById('detail-kpis').innerHTML = `
+    <div class="detail-kpi"><div class="detail-kpi-label">Giá trung bình</div><div class="detail-kpi-val">${d.gia.toFixed(1)} tr</div></div>
+    <div class="detail-kpi"><div class="detail-kpi-label">Nhà mặt phố</div><div class="detail-kpi-val" style="color:var(--red);">${d.mat_pho} tr</div></div>
+    <div class="detail-kpi"><div class="detail-kpi-label">Nhà ngõ hẻm</div><div class="detail-kpi-val" style="color:var(--gold);">${d.ngo_hem} tr</div></div>
+    <div class="detail-kpi"><div class="detail-kpi-label">Giao dịch</div><div class="detail-kpi-val" style="color:var(--green);">${d.count.toLocaleString()}</div></div>`;
+
+  // Bar chart by loại
+  if(detailBarChart) detailBarChart.destroy();
+  detailBarChart = new Chart(document.getElementById('detail-bar'),{
+    type:'bar',
+    data:{
+      labels:['Mặt phố','Ngõ hẻm','Liền kề','Trung bình'],
+      datasets:[{
+        data:[d.mat_pho,d.ngo_hem,d.lien_ke,d.gia],
+        backgroundColor:['rgba(192,57,43,0.7)','rgba(181,147,42,0.7)','rgba(37,99,235,0.7)','rgba(26,107,69,0.7)'],
+        borderRadius:6
+      }]
+    },
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>v+' tr'},beginAtZero:false}}}
+  });
+
+  // Line chart trend
+  if(detailLineChart) detailLineChart.destroy();
+  detailLineChart = new Chart(document.getElementById('detail-line'),{
+    type:'line',
+    data:{
+      labels:['Q1/2020','Q2/2020','Q3/2020','Q4/2020'],
+      datasets:[{
+        label:'Giá TB (tr/m²)',
+        data:d.trend,
+        borderColor:'var(--green)',
+        backgroundColor:'rgba(26,107,69,0.08)',
+        fill:true,tension:0.4,pointBackgroundColor:'var(--green)',pointRadius:5
+      }]
+    },
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>v+' tr'}}}}
+  });
+
+  document.getElementById('detail-panel').classList.add('show');
+  document.getElementById('detail-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Top 10 chart
+function renderTop10(){
+  const top10 = [...DISTRICTS].sort((a,b)=>b.gia-a.gia).slice(0,10);
+  new Chart(document.getElementById('top10-chart'),{
+    type:'bar',
+    data:{
+      labels:top10.map(d=>d.ten),
+      datasets:[{
+        data:top10.map(d=>d.gia),
+        backgroundColor:top10.map(d=>{
+          if(d.gia>=120) return 'rgba(192,57,43,0.75)';
+          if(d.gia>=90)  return 'rgba(181,147,42,0.75)';
+          return 'rgba(26,107,69,0.75)';
+        }),
+        borderRadius:6
+      }]
+    },
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>v+' tr'},beginAtZero:false,min:60}}}
+  });
+}
+
+// Distribution pie
+function renderDist(){
+  const cao   = DISTRICTS.filter(d=>d.gia>=100).reduce((s,d)=>s+d.count,0);
+  const trung = DISTRICTS.filter(d=>d.gia>=70&&d.gia<100).reduce((s,d)=>s+d.count,0);
+  const binh  = DISTRICTS.filter(d=>d.gia<70).reduce((s,d)=>s+d.count,0);
+  new Chart(document.getElementById('dist-chart'),{
+    type:'doughnut',
+    data:{
+      labels:['Cao cấp (≥100 tr/m²)','Trung cấp (70–100)','Bình dân (<70)'],
+      datasets:[{
+        data:[cao,trung,binh],
+        backgroundColor:['rgba(192,57,43,0.75)','rgba(181,147,42,0.75)','rgba(26,107,69,0.75)'],
+        borderWidth:3,borderColor:'#fff'
+      }]
+    },
+    options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{size:12}}}}}
+  });
+}
+
+renderHeatmap();
+renderTop10();
+renderDist();
+</script>
+</body>
+</html>

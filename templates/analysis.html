@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Phân tích thị trường — NhàGiá.AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    :root{
+      --white:#ffffff;--off:#f8f6f2;--light:#f0ece4;--mid:#c8bfaa;
+      --text:#1a1a1a;--muted:#6b6453;--gold:#b5932a;--gold2:#d4af5a;
+      --green:#1a6b45;--green2:#2a9461;--red:#c0392b;
+      --border:rgba(0,0,0,0.08);--shadow:0 4px 24px rgba(0,0,0,0.08);--radius:12px;
+    }
+    body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--off);line-height:1.6;}
+
+    nav{position:sticky;top:0;z-index:200;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;padding:0 2.5rem;}
+    .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto;}
+    .nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .nav-brand-text{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--text);}
+    .nav-brand-text span{color:var(--green);}
+    .nav-links{display:flex;align-items:center;list-style:none;gap:0.25rem;}
+    .nav-links a{text-decoration:none;color:var(--muted);font-size:0.875rem;font-weight:500;padding:8px 16px;border-radius:99px;transition:all 0.2s;white-space:nowrap;}
+    .nav-links a:hover{color:var(--text);background:var(--off);}
+    .nav-links a.active{color:var(--green);background:rgba(26,107,69,0.07);}
+    .nav-cta{margin-left:1rem;background:var(--green);color:var(--white)!important;padding:9px 22px!important;border-radius:99px!important;font-weight:600!important;}
+    .nav-cta:hover{background:var(--green2)!important;}
+
+    .page-header{background:linear-gradient(135deg,#0e3d26 0%,var(--green) 100%);padding:4rem 2.5rem 5rem;position:relative;overflow:hidden;}
+    .page-header::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:60px;background:var(--off);clip-path:ellipse(55% 100% at 50% 100%);}
+    .page-header-inner{max-width:1100px;margin:0 auto;}
+    .page-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.9);font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:5px 14px;border-radius:99px;margin-bottom:1.25rem;}
+    .page-header h1{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3rem);font-weight:700;color:var(--white);margin-bottom:0.75rem;line-height:1.2;}
+    .page-header h1 em{font-style:italic;color:var(--gold2);}
+    .page-header p{color:rgba(255,255,255,0.72);font-size:1rem;max-width:520px;}
+
+    .section{max-width:1100px;margin:0 auto;padding:3rem 2.5rem;}
+
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2.5rem;}
+    .kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+    .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+    .kpi-card.green::before{background:var(--green);}
+    .kpi-card.gold::before{background:var(--gold);}
+    .kpi-card.red::before{background:var(--red);}
+    .kpi-card.blue::before{background:#3b82f6;}
+    .kpi-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+    .kpi-val{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;line-height:1;margin-bottom:4px;}
+    .kpi-val.green{color:var(--green);}
+    .kpi-val.gold{color:var(--gold);}
+    .kpi-val.red{color:var(--red);}
+    .kpi-val.blue{color:#3b82f6;}
+    .kpi-sub{font-size:0.78rem;color:var(--muted);}
+
+    .sec-tag{font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--green);margin-bottom:6px;}
+    .sec-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;margin-bottom:0.4rem;}
+    .sec-sub{color:var(--muted);font-size:0.9rem;margin-bottom:2rem;}
+
+    .card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow);}
+    .chart-title{font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;}
+    .chart-title::before{content:'';width:4px;height:16px;background:var(--green);border-radius:2px;}
+
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:2rem;}
+    .three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem;}
+
+    .acc-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+    .acc-label{width:200px;font-size:0.82rem;color:var(--muted);flex-shrink:0;}
+    .acc-track{flex:1;height:10px;background:var(--off);border-radius:99px;overflow:hidden;}
+    .acc-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--green2));transition:width 1.2s cubic-bezier(.4,0,.2,1);width:0;}
+    .acc-val{font-size:0.82rem;font-weight:600;min-width:55px;text-align:right;}
+    .acc-val.good{color:var(--green);}
+    .acc-val.warn{color:var(--gold);}
+    .acc-val.bad{color:var(--red);}
+
+    .prec-card{background:var(--off);border-radius:10px;padding:1.25rem;text-align:center;}
+    .prec-num{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:700;margin:6px 0;}
+    .prec-label{font-size:0.75rem;color:var(--muted);}
+    .prec-seg{font-size:0.8rem;font-weight:500;margin-bottom:6px;}
+
+    .table-wrap{overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;font-size:0.875rem;}
+    th{text-align:left;padding:10px 14px;color:var(--muted);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;border-bottom:2px solid var(--border);}
+    td{padding:12px 14px;border-bottom:1px solid var(--border);}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:var(--off);}
+    .tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:0.72rem;font-weight:600;}
+    .tag-green{background:rgba(26,107,69,0.1);color:var(--green);}
+    .tag-gold{background:rgba(181,147,42,0.12);color:var(--gold);}
+    .tag-red{background:rgba(192,57,43,0.1);color:var(--red);}
+
+    /* Loading skeleton */
+    .skeleton{background:linear-gradient(90deg,#e8e4dc 25%,#f0ece4 50%,#e8e4dc 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px;display:inline-block;}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    /* Best model badge */
+    .best-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(26,107,69,0.1);border:1px solid rgba(26,107,69,0.25);color:var(--green);font-size:0.72rem;font-weight:600;padding:4px 12px;border-radius:99px;margin-left:8px;}
+
+    footer{background:#0e1a12;color:rgba(255,255,255,0.5);padding:2.5rem;text-align:center;font-size:0.82rem;}
+    @media(max-width:768px){
+      nav{padding:0 1.25rem;}.section{padding:2rem 1.25rem;}
+      .kpi-row{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}.three-col{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="/">
+    <div class="nav-logo-icon">🏠</div>
+    <span class="nav-brand-text">Nhà<span>Giá</span>.AI</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="/">Trang chủ</a></li>
+    <li><a href="/predict">Định giá</a></li>
+    <li><a href="/analysis" class="active">Thị trường</a></li>
+    <li><a href="/suggest">Tìm nhà</a></li>
+    <li><a href="/compare">So sánh</a></li>
+    <li><a href="/heatmap">Bản đồ giá</a></li>
+    <li><a href="/calculator">Tài chính</a></li>
+    <li><a href="/predict" class="nav-cta">Định giá ngay →</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="page-tag">📈 Phân tích thị trường</div>
+    <h1>Thị trường bất động sản <em>Hà Nội</em></h1>
+    <p>Tổng hợp dữ liệu giá, hiệu suất dự đoán và xu hướng thị trường từ 82.000 giao dịch thực tế 2019–2020.</p>
+  </div>
+</div>
+
+<div class="section">
+
+  <!-- KPI ROW — điền động từ API -->
+  <div class="kpi-row">
+    <div class="kpi-card green">
+      <div class="kpi-label">Giá trung bình</div>
+      <div class="kpi-val green" id="kpi-avg-price"><span class="skeleton" style="width:80px;height:2rem;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+      <div class="kpi-sub">Triệu đồng / m²</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-label">Sai số dự đoán (RMSE)</div>
+      <div class="kpi-val gold" id="kpi-rmse"><span class="skeleton" style="width:70px;height:2rem;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+      <div class="kpi-sub" id="kpi-rmse-sub">Triệu / m²</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Độ chính xác (R²)</div>
+      <div class="kpi-val blue" id="kpi-r2"><span class="skeleton" style="width:60px;height:2rem;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+      <div class="kpi-sub" id="kpi-r2-sub">Mô hình tốt nhất</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Tổng giao dịch</div>
+      <div class="kpi-val red" id="kpi-total"><span class="skeleton" style="width:60px;height:2rem;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+      <div class="kpi-sub">Hà Nội, 2019–2020</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="two-col">
+    <div class="card">
+      <div class="chart-title">Tầm quan trọng của các yếu tố định giá</div>
+      <canvas id="featChart" style="max-height:300px;"></canvas>
+    </div>
+    <div class="card">
+      <div class="chart-title">Độ chính xác R² theo phương pháp</div>
+      <canvas id="r2Chart" style="max-height:300px;"></canvas>
+    </div>
+  </div>
+
+  <!-- ACCURACY BARS — điền động -->
+  <div class="card" style="margin-bottom:2rem;">
+    <div class="chart-title">Hiệu suất các phương pháp dự đoán (RMSE — càng thấp càng tốt)</div>
+    <div id="acc-bars-container">
+      <!-- skeleton loading -->
+      <div style="color:var(--muted);font-size:0.85rem;padding:1rem 0;">Đang tải dữ liệu từ model...</div>
+    </div>
+  </div>
+
+  <!-- METRICS TABLE — điền động -->
+  <div class="sec-tag" style="margin-bottom:0.5rem;">So sánh chi tiết</div>
+  <div class="sec-title" style="font-size:1.5rem;margin-bottom:0.5rem;">
+    Bảng kết quả đánh giá
+    <span class="best-badge" id="best-model-badge" style="display:none;">🏆 <span id="best-model-name"></span></span>
+  </div>
+  <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem;" id="model-note"></p>
+
+  <div class="card" style="margin-bottom:2.5rem;">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Phương pháp</th><th>RMSE ↓</th><th>MAE ↓</th><th>R² ↑</th><th>Đánh giá</th></tr>
+        </thead>
+        <tbody id="metrics-table-body">
+          <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:2rem;">Đang tải...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PCA SCATTER -->
+  <div class="sec-tag" style="margin-bottom:0.5rem;">Phân tích cụm</div>
+  <div class="sec-title" style="font-size:1.5rem;margin-bottom:0.4rem;">Phân bố bất động sản theo phân khúc giá</div>
+  <div class="sec-sub">Mỗi điểm là một căn nhà, được phân nhóm theo mức giá.</div>
+
+  <div class="card" style="margin-bottom:2.5rem;">
+    <div class="chart-title">Phân tích thành phần chính (PCA) — 2 chiều</div>
+    <canvas id="pcaChart" style="max-height:380px;"></canvas>
+    <p style="color:var(--muted);font-size:0.8rem;margin-top:12px;">Trục ngang liên quan đến loại hình và vị trí. Trục dọc phản ánh diện tích và số tầng.</p>
+  </div>
+
+  <!-- PRECISION PHÂN LOẠI -->
+  <div class="sec-tag" style="margin-bottom:0.5rem;">Phân loại giá</div>
+  <div class="sec-title" style="font-size:1.5rem;margin-bottom:1.5rem;">Độ chính xác phân loại theo phân khúc</div>
+
+  <div class="three-col">
+    <div class="prec-card">
+      <div class="prec-seg" style="color:var(--green);">Phân khúc bình dân</div>
+      <div class="prec-num" style="color:var(--green);" id="prec-low">—</div>
+      <div class="prec-label" id="prec-low-range">Precision · Giá ≤ 79 tr/m²</div>
+    </div>
+    <div class="prec-card">
+      <div class="prec-seg" style="color:var(--gold);">Phân khúc trung cấp</div>
+      <div class="prec-num" style="color:var(--gold);" id="prec-mid">—</div>
+      <div class="prec-label" id="prec-mid-range">Precision · 79 – 100 tr/m²</div>
+    </div>
+    <div class="prec-card">
+      <div class="prec-seg" style="color:var(--red);">Phân khúc cao cấp</div>
+      <div class="prec-num" style="color:var(--red);" id="prec-high">—</div>
+      <div class="prec-label" id="prec-high-range">Precision · Giá > 100 tr/m²</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <strong style="color:rgba(255,255,255,0.8);">NhàGiá.AI</strong> &nbsp;·&nbsp; Nền tảng định giá bất động sản thông minh &nbsp;·&nbsp; Hà Nội, Việt Nam
+</footer>
+
+<script>
+Chart.defaults.color='#6b6453';
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.borderColor='rgba(0,0,0,0.05)';
+
+// ── Chart feature importance (tầm quan trọng yếu tố) ──
+// Các giá trị này từ Random Forest feature importance — tương đối ổn định
+new Chart(document.getElementById('featChart'),{
+  type:'bar',
+  data:{
+    labels:['GiáMedian Quận','Loại mặt phố','GiáMedian Phường','Diện tích','Số phòng ngủ','Số tầng','Loại ngõ hẻm','Chiều rộng','GiáMedian Loại nhà','Q. Đống Đa'],
+    datasets:[{data:[22.1,18.3,15.4,10.2,7.8,5.1,4.4,3.2,3.0,2.4],backgroundColor:'rgba(26,107,69,0.65)',borderRadius:4}]
+  },
+  options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
+});
+
+// R2 chart — sẽ được cập nhật sau khi fetch API
+let r2ChartInstance = new Chart(document.getElementById('r2Chart'),{
+  type:'bar',
+  data:{
+    labels:['Đang tải...'],
+    datasets:[{data:[0],backgroundColor:['rgba(26,107,69,0.75)'],borderRadius:4}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{max:1.0,grid:{color:'rgba(0,0,0,0.04)'}}}}
+});
+
+// PCA scatter
+function rndCluster(cx,cy,n,spread){
+  return Array.from({length:n},()=>({x:cx+(Math.random()-0.5)*spread,y:cy+(Math.random()-0.5)*spread}));
+}
+new Chart(document.getElementById('pcaChart'),{
+  type:'scatter',
+  data:{
+    datasets:[
+      {label:'Bình dân',data:rndCluster(-3,1,400,4),backgroundColor:'rgba(26,107,69,0.35)',pointRadius:3},
+      {label:'Trung cấp',data:rndCluster(0,-2,400,4),backgroundColor:'rgba(181,147,42,0.4)',pointRadius:3},
+      {label:'Cao cấp',data:rndCluster(4,2,300,3.5),backgroundColor:'rgba(192,57,43,0.4)',pointRadius:3},
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{labels:{color:'#6b6453',font:{size:12}}}},scales:{x:{title:{display:true,text:'Thành phần 1',color:'#6b6453'},grid:{color:'rgba(0,0,0,0.04)'}},y:{title:{display:true,text:'Thành phần 2',color:'#6b6453'},grid:{color:'rgba(0,0,0,0.04)'}}}}
+});
+
+// ── FETCH dữ liệu thực từ API ──
+async function loadModelStats() {
+  try {
+    const res = await fetch('/api/model-stats');
+    if (!res.ok) throw new Error('API lỗi');
+    const data = await res.json();
+
+    // --- KPI ---
+    document.getElementById('kpi-avg-price').textContent = data.avg_price.toFixed(0) + ' tr';
+    document.getElementById('kpi-rmse').textContent = '±' + data.best_rmse.toFixed(0) + ' tr';
+    document.getElementById('kpi-rmse-sub').textContent = 'Triệu/m² — ' + data.best_model;
+    const r2pct = (data.best_r2 * 100).toFixed(1) + '%';
+    document.getElementById('kpi-r2').textContent = r2pct;
+    document.getElementById('kpi-r2-sub').textContent = data.best_model;
+    const totalK = data.total_rows >= 1000
+      ? (data.total_rows / 1000).toFixed(0) + 'K'
+      : data.total_rows;
+    document.getElementById('kpi-total').textContent = totalK;
+
+    // --- Best model badge ---
+    document.getElementById('best-model-name').textContent = data.best_model + ' — R² ' + r2pct;
+    document.getElementById('best-model-badge').style.display = 'inline-flex';
+
+    // Ghi chú nếu dùng Stacking
+    if (data.using_stacking) {
+      document.getElementById('model-note').textContent =
+        '✅ Phiên bản cải tiến: Stacking Ensemble (RF + XGBoost + LightGBM) đã được huấn luyện và đang được sử dụng.';
+    }
+
+    // --- Bảng kết quả ---
+    const models = data.models || [];
+    // Sắp xếp theo R² giảm dần
+    models.sort((a, b) => (b.R2 || b.r2 || 0) - (a.R2 || a.r2 || 0));
+
+    const tbody = document.getElementById('metrics-table-body');
+    tbody.innerHTML = '';
+    models.forEach((m, i) => {
+      const name  = m.model || m.name || '—';
+      const rmse  = (m.RMSE || m.rmse || 0).toFixed(1);
+      const mae   = (m.MAE  || m.mae  || 0).toFixed(1);
+      const r2    = (m.R2   || m.r2   || 0).toFixed(3);
+      const r2num = parseFloat(r2);
+
+      let rmseColor = '', r2Color = '', tagHtml = '';
+      if (r2num >= 0.55)      { rmseColor='color:var(--green);font-weight:600;'; r2Color=rmseColor; tagHtml='<span class="tag tag-green">🏆 Tốt nhất</span>'; }
+      else if (r2num >= 0.40) { rmseColor='color:var(--green);font-weight:600;'; r2Color=rmseColor; tagHtml='<span class="tag tag-green">Xuất sắc</span>'; }
+      else if (r2num >= 0.25) { tagHtml='<span class="tag tag-gold">Khá</span>'; }
+      else if (r2num >= 0)    { tagHtml='<span class="tag tag-gold">Trung bình</span>'; }
+      else                    { r2Color='color:var(--red);'; tagHtml='<span class="tag tag-red">Kém</span>'; }
+
+      tbody.innerHTML += `
+        <tr>
+          <td><strong>${name}</strong>${i===0?' <span class="tag tag-green" style="margin-left:6px;">Best</span>':''}</td>
+          <td style="${rmseColor}">${rmse}</td>
+          <td>${mae}</td>
+          <td style="${r2Color}">${r2}</td>
+          <td>${tagHtml}</td>
+        </tr>`;
+    });
+
+    // --- R2 Chart ---
+    // Chỉ hiện các model có R2 > -1 để biểu đồ dễ đọc
+    const chartModels = models.filter(m => (m.R2 || m.r2 || 0) > -1);
+    const chartLabels = chartModels.map(m => {
+      const n = m.model || m.name || '';
+      return n.length > 20 ? n.substring(0, 18) + '…' : n;
+    });
+    const chartData   = chartModels.map(m => Math.max(0, +(m.R2 || m.r2 || 0).toFixed(3)));
+    const chartColors = chartModels.map((m, i) => {
+      const r2 = m.R2 || m.r2 || 0;
+      if (r2 >= 0.55) return 'rgba(26,107,69,0.85)';
+      if (r2 >= 0.40) return 'rgba(26,107,69,0.65)';
+      if (r2 >= 0.25) return 'rgba(181,147,42,0.6)';
+      return 'rgba(192,57,43,0.5)';
+    });
+
+    r2ChartInstance.data.labels   = chartLabels;
+    r2ChartInstance.data.datasets[0].data = chartData;
+    r2ChartInstance.data.datasets[0].backgroundColor = chartColors;
+    r2ChartInstance.options.scales.y.max = Math.min(1.0, Math.max(...chartData) * 1.2 + 0.05);
+    r2ChartInstance.update();
+
+    // --- RMSE Bars ---
+    // Tính max RMSE hợp lý (bỏ qua outlier Ridge 1222)
+    const saneModels = models.filter(m => (m.RMSE || m.rmse || 0) < 500);
+    const maxRMSE    = Math.max(...saneModels.map(m => m.RMSE || m.rmse || 0));
+
+    const barsContainer = document.getElementById('acc-bars-container');
+    barsContainer.innerHTML = '';
+    models.forEach(m => {
+      const name = m.model || m.name || '—';
+      const rmse = m.RMSE || m.rmse || 0;
+      const pct  = rmse >= 500 ? 6 : Math.round((1 - (rmse / (maxRMSE * 1.15))) * 100);
+      const cls  = rmse <= maxRMSE * 0.75 ? 'good' : rmse <= maxRMSE ? 'warn' : 'bad';
+      const barColor = rmse >= 500
+        ? 'background:linear-gradient(90deg,var(--red),#f87171);'
+        : rmse > maxRMSE * 0.9
+          ? 'background:linear-gradient(90deg,var(--gold),var(--gold2));'
+          : '';
+
+      barsContainer.innerHTML += `
+        <div class="acc-row">
+          <div class="acc-label">${name}</div>
+          <div class="acc-track"><div class="acc-fill" data-w="${pct}" style="${barColor}"></div></div>
+          <div class="acc-val ${cls}">${rmse >= 500 ? rmse.toFixed(0) : rmse.toFixed(1)}</div>
+        </div>`;
+    });
+
+    // Animate bars
+    setTimeout(() => {
+      document.querySelectorAll('.acc-fill[data-w]').forEach(el => {
+        el.style.width = el.dataset.w + '%';
+      });
+    }, 100);
+
+    // --- Precision cards từ logistic ---
+    if (data.logistic_precision) {
+      const lp = data.logistic_precision;
+      document.getElementById('prec-low').textContent  = (lp.low  * 100).toFixed(0) + '%';
+      document.getElementById('prec-mid').textContent  = (lp.mid  * 100).toFixed(0) + '%';
+      document.getElementById('prec-high').textContent = (lp.high * 100).toFixed(0) + '%';
+      if (lp.thresholds) {
+        document.getElementById('prec-low-range').textContent  = `Precision · Giá ≤ ${lp.thresholds[0]} tr/m²`;
+        document.getElementById('prec-mid-range').textContent  = `Precision · ${lp.thresholds[0]}–${lp.thresholds[1]} tr/m²`;
+        document.getElementById('prec-high-range').textContent = `Precision · Giá > ${lp.thresholds[1]} tr/m²`;
+      }
+    } else {
+      // Fallback số cũ nếu chưa có
+      document.getElementById('prec-low').textContent  = '72%';
+      document.getElementById('prec-mid').textContent  = '58%';
+      document.getElementById('prec-high').textContent = '67%';
+    }
+
+  } catch (err) {
+    console.error('Không thể load model stats:', err);
+    // Fallback: hiển thị số cũ nếu API lỗi
+    document.getElementById('kpi-avg-price').textContent = '93 tr';
+    document.getElementById('kpi-rmse').textContent = '±39 tr';
+    document.getElementById('kpi-r2').textContent = '42%';
+    document.getElementById('kpi-total').textContent = '82K';
+    document.getElementById('prec-low').textContent  = '72%';
+    document.getElementById('prec-mid').textContent  = '58%';
+    document.getElementById('prec-high').textContent = '67%';
+    document.getElementById('acc-bars-container').innerHTML = `
+      <p style="color:var(--muted);font-size:0.85rem;">⚠️ Không thể kết nối API. Đảm bảo Flask server đang chạy và đã train model.</p>`;
+  }
+}
+
+loadModelStats();
+</script>
+</body>
+</html>

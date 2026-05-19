@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>So sánh bất động sản — NhàGiá.AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --white:#fff;--off:#f8f6f2;--text:#1a1a1a;--muted:#6b6453;
+      --green:#1a6b45;--green2:#2a9461;--gold:#b5932a;--red:#c0392b;
+      --blue:#2563eb;--border:rgba(0,0,0,0.08);--shadow:0 4px 24px rgba(0,0,0,0.08);--radius:12px;
+      --c1:#1a6b45;--c2:#2563eb;
+    }
+    body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--off);line-height:1.6;}
+
+    nav{position:sticky;top:0;z-index:200;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;padding:0 2.5rem;}
+    .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto;}
+    .nav-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    .nav-brand-text{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;color:var(--text);}
+    .nav-brand-text span{color:var(--green);}
+    .nav-links{display:flex;align-items:center;list-style:none;gap:0.25rem;}
+    .nav-links a{text-decoration:none;color:var(--muted);font-size:0.875rem;font-weight:500;padding:8px 16px;border-radius:99px;transition:all 0.2s;}
+    .nav-links a:hover,.nav-links a.active{color:var(--green);background:rgba(26,107,69,0.07);}
+    .nav-cta{margin-left:1rem;background:var(--green);color:var(--white)!important;padding:9px 22px!important;border-radius:99px!important;font-weight:600!important;}
+
+    .page-header{background:linear-gradient(135deg,#1a1a2e,#2563eb);padding:3.5rem 2.5rem 4.5rem;position:relative;overflow:hidden;}
+    .page-header::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:60px;background:var(--off);clip-path:ellipse(55% 100% at 50% 100%);}
+    .page-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.9);font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:5px 14px;border-radius:99px;margin-bottom:1.25rem;}
+    .page-header h1{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;color:#fff;margin-bottom:0.5rem;}
+    .page-header h1 em{font-style:italic;color:#93c5fd;}
+    .page-header p{color:rgba(255,255,255,0.75);font-size:1rem;max-width:500px;}
+
+    .main{max-width:1100px;margin:0 auto;padding:2.5rem;}
+
+    /* INPUT CARDS */
+    .input-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:start;margin-bottom:2rem;}
+    .vs-badge{display:flex;align-items:center;justify-content:center;width:48px;height:48px;background:linear-gradient(135deg,var(--green),var(--blue));border-radius:50%;color:#fff;font-weight:700;font-size:0.9rem;margin-top:1.5rem;box-shadow:0 4px 16px rgba(0,0,0,0.2);flex-shrink:0;}
+
+    .prop-card{background:var(--white);border:2px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);transition:border-color 0.2s;}
+    .prop-card.prop-a{border-top:4px solid var(--c1);}
+    .prop-card.prop-b{border-top:4px solid var(--c2);}
+    .prop-label{display:flex;align-items:center;gap:8px;font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;margin-bottom:1.25rem;}
+    .prop-dot{width:12px;height:12px;border-radius:50%;}
+    .dot-a{background:var(--c1);}
+    .dot-b{background:var(--c2);}
+
+    .form-group{margin-bottom:0.9rem;}
+    .form-group label{display:block;font-size:0.75rem;color:var(--muted);font-weight:500;margin-bottom:4px;}
+    .form-group input,.form-group select{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:0.875rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--off);outline:none;transition:all 0.2s;}
+    .form-group input:focus,.form-group select:focus{border-color:var(--green);background:#fff;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
+
+    .btn-compare{display:block;width:100%;max-width:320px;margin:0 auto 2.5rem;background:linear-gradient(135deg,var(--green),var(--blue));color:#fff;border:none;border-radius:99px;padding:14px 32px;font-size:0.95rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.25s;box-shadow:0 4px 16px rgba(0,0,0,0.15);}
+    .btn-compare:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2);}
+
+    /* RESULT SECTION */
+    #result-section{display:none;}
+
+    .winner-banner{background:linear-gradient(135deg,rgba(26,107,69,0.08),rgba(37,99,235,0.06));border:1px solid rgba(26,107,69,0.2);border-radius:var(--radius);padding:1.5rem 2rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.5rem;}
+    .winner-icon{font-size:2.5rem;}
+    .winner-text h3{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:700;margin-bottom:2px;}
+    .winner-text p{font-size:0.85rem;color:var(--muted);}
+
+    /* COMPARE TABLE */
+    .compare-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);margin-bottom:2rem;}
+    .compare-table th{padding:12px 16px;font-size:0.75rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;background:var(--off);}
+    .compare-table th.a{color:var(--c1);} .compare-table th.b{color:var(--c2);}
+    .compare-table td{padding:12px 16px;border-top:1px solid var(--border);font-size:0.875rem;}
+    .compare-table tr:hover td{background:#fafaf9;}
+    .row-label{color:var(--muted);font-size:0.8rem;}
+    .winner-cell{font-weight:600;}
+    .win-a{color:var(--c1);} .win-b{color:var(--c2);}
+    .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:0.7rem;font-weight:700;}
+    .tag-win-a{background:rgba(26,107,69,0.12);color:var(--c1);}
+    .tag-win-b{background:rgba(37,99,235,0.12);color:var(--c2);}
+    .tag-tie{background:rgba(0,0,0,0.06);color:var(--muted);}
+
+    /* CHART GRID */
+    .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:2rem;}
+    .chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);}
+    .chart-title{font-size:0.82rem;font-weight:600;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px;}
+    .chart-title::before{content:'';width:4px;height:14px;border-radius:2px;background:linear-gradient(var(--green),var(--blue));}
+
+    /* SCORE CARDS */
+    .score-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;}
+    .score-card{background:var(--white);border:2px solid var(--border);border-radius:var(--radius);padding:1.5rem;text-align:center;box-shadow:var(--shadow);}
+    .score-card.winner-card{border-color:var(--green);}
+    .score-label{font-size:0.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;}
+    .score-val{font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:700;line-height:1;}
+    .score-desc{font-size:0.8rem;color:var(--muted);margin-top:6px;}
+
+    footer{background:#0e1a12;color:rgba(255,255,255,0.5);padding:2rem;text-align:center;font-size:0.82rem;margin-top:2rem;}
+    @media(max-width:768px){
+      .input-grid{grid-template-columns:1fr;}.vs-badge{margin:0 auto;}
+      .chart-grid{grid-template-columns:1fr;}.score-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="/"><div class="nav-logo-icon">🏠</div><span class="nav-brand-text">Nhà<span>Giá</span>.AI</span></a>
+  <ul class="nav-links">
+    <li><a href="/">Trang chủ</a></li>
+    <li><a href="/predict">Định giá</a></li>
+    <li><a href="/analysis">Thị trường</a></li>
+    <li><a href="/suggest">Tìm nhà</a></li>
+    <li><a href="/compare" class="active">So sánh</a></li>
+    <li><a href="/heatmap">Bản đồ giá</a></li>
+    <li><a href="/calculator">Tài chính</a></li>
+    <li><a href="/predict" class="nav-cta">Định giá ngay →</a></li>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="page-tag">⚖️ So sánh bất động sản</div>
+    <h1>So sánh <em>song song</em> hai căn nhà</h1>
+    <p>Nhập thông tin 2 căn nhà, hệ thống AI sẽ tự động định giá và phân tích ưu nhược điểm của từng căn.</p>
+  </div>
+</div>
+
+<div class="main">
+  <div class="input-grid">
+    <!-- PROPERTY A -->
+    <div class="prop-card prop-a">
+      <div class="prop-label"><div class="prop-dot dot-a"></div> Căn nhà A</div>
+      <div class="form-group">
+        <label>Tên / Ghi chú</label>
+        <input type="text" id="a-ten" value="Nhà phố Cầu Giấy" placeholder="VD: Nhà phố Cầu Giấy"/>
+      </div>
+      <div class="form-group">
+        <label>Quận / Huyện</label>
+        <select id="a-quan">
+          <option value="Quận Cầu Giấy" selected>Quận Cầu Giấy</option>
+          <option value="Quận Ba Đình">Quận Ba Đình</option>
+          <option value="Quận Đống Đa">Quận Đống Đa</option>
+          <option value="Quận Hoàn Kiếm">Quận Hoàn Kiếm</option>
+          <option value="Quận Tây Hồ">Quận Tây Hồ</option>
+          <option value="Quận Thanh Xuân">Quận Thanh Xuân</option>
+          <option value="Quận Hoàng Mai">Quận Hoàng Mai</option>
+          <option value="Quận Hai Bà Trưng">Quận Hai Bà Trưng</option>
+          <option value="Quận Nam Từ Liêm">Quận Nam Từ Liêm</option>
+          <option value="Huyện Hoài Đức">Huyện Hoài Đức</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Loại hình</label>
+        <select id="a-loai">
+          <option value="Nhà ngõ, hẻm" selected>Nhà ngõ, hẻm</option>
+          <option value="Nhà mặt phố, mặt tiền">Nhà mặt phố, mặt tiền</option>
+          <option value="Nhà phố liền kề">Nhà phố liền kề</option>
+          <option value="Nhà biệt thự">Nhà biệt thự</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Diện tích (m²)</label><input type="number" id="a-dt" value="50"/></div>
+        <div class="form-group"><label>Số phòng ngủ</label><input type="number" id="a-phong" value="3"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Số tầng</label><input type="number" id="a-tang" value="4"/></div>
+        <div class="form-group"><label>Chiều rộng (m)</label><input type="number" id="a-rong" value="5"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Pháp lý</label><select id="a-pl"><option value="1">Đã có sổ</option><option value="0">Chưa có sổ</option></select></div>
+        <div class="form-group"><label>Giá đang bán (triệu)</label><input type="number" id="a-giadang" value="4500"/></div>
+      </div>
+    </div>
+
+    <div class="vs-badge">VS</div>
+
+    <!-- PROPERTY B -->
+    <div class="prop-card prop-b">
+      <div class="prop-label"><div class="prop-dot dot-b"></div> Căn nhà B</div>
+      <div class="form-group">
+        <label>Tên / Ghi chú</label>
+        <input type="text" id="b-ten" value="Nhà mặt phố Ba Đình" placeholder="VD: Nhà mặt phố Ba Đình"/>
+      </div>
+      <div class="form-group">
+        <label>Quận / Huyện</label>
+        <select id="b-quan">
+          <option value="Quận Cầu Giấy">Quận Cầu Giấy</option>
+          <option value="Quận Ba Đình" selected>Quận Ba Đình</option>
+          <option value="Quận Đống Đa">Quận Đống Đa</option>
+          <option value="Quận Hoàn Kiếm">Quận Hoàn Kiếm</option>
+          <option value="Quận Tây Hồ">Quận Tây Hồ</option>
+          <option value="Quận Thanh Xuân">Quận Thanh Xuân</option>
+          <option value="Quận Hoàng Mai">Quận Hoàng Mai</option>
+          <option value="Quận Hai Bà Trưng">Quận Hai Bà Trưng</option>
+          <option value="Quận Nam Từ Liêm">Quận Nam Từ Liêm</option>
+          <option value="Huyện Hoài Đức">Huyện Hoài Đức</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Loại hình</label>
+        <select id="b-loai">
+          <option value="Nhà ngõ, hẻm">Nhà ngõ, hẻm</option>
+          <option value="Nhà mặt phố, mặt tiền" selected>Nhà mặt phố, mặt tiền</option>
+          <option value="Nhà phố liền kề">Nhà phố liền kề</option>
+          <option value="Nhà biệt thự">Nhà biệt thự</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Diện tích (m²)</label><input type="number" id="b-dt" value="45"/></div>
+        <div class="form-group"><label>Số phòng ngủ</label><input type="number" id="b-phong" value="3"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Số tầng</label><input type="number" id="b-tang" value="4"/></div>
+        <div class="form-group"><label>Chiều rộng (m)</label><input type="number" id="b-rong" value="4"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Pháp lý</label><select id="b-pl"><option value="1">Đã có sổ</option><option value="0">Chưa có sổ</option></select></div>
+        <div class="form-group"><label>Giá đang bán (triệu)</label><input type="number" id="b-giadang" value="6200"/></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-compare" onclick="doCompare()">⚖️ So sánh ngay</button>
+
+  <!-- RESULTS -->
+  <div id="result-section">
+    <div class="winner-banner" id="winner-banner">
+      <div class="winner-icon" id="winner-icon">🏆</div>
+      <div class="winner-text">
+        <h3 id="winner-title">—</h3>
+        <p id="winner-desc">—</p>
+      </div>
+    </div>
+
+    <!-- SCORE -->
+    <div class="score-grid" id="score-grid"></div>
+
+    <!-- COMPARE TABLE -->
+    <table class="compare-table" id="compare-table">
+      <thead>
+        <tr>
+          <th>Tiêu chí</th>
+          <th class="a" id="th-a">Căn A</th>
+          <th class="b" id="th-b">Căn B</th>
+          <th>Đánh giá</th>
+        </tr>
+      </thead>
+      <tbody id="compare-tbody"></tbody>
+    </table>
+
+    <!-- CHARTS -->
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">So sánh chỉ số chính</div>
+        <canvas id="radar-chart" style="max-height:280px;"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Giá AI vs Giá đang bán</div>
+        <canvas id="price-chart" style="max-height:280px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer><strong style="color:rgba(255,255,255,0.8);">NhàGiá.AI</strong> &nbsp;·&nbsp; So sánh bất động sản thông minh</footer>
+
+<script>
+Chart.defaults.color='#6b6453';
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.borderColor='rgba(0,0,0,0.06)';
+
+let radarChart=null, priceChart=null;
+
+function getVal(id){ return parseFloat(document.getElementById(id).value)||0; }
+function getStr(id){ return document.getElementById(id).value; }
+function fmt(n){ return n.toLocaleString('vi-VN',{maximumFractionDigits:1}); }
+
+async function callPredict(q,loai,dt,phong,tang,rong,pl){
+  try {
+    const r = await fetch('/api/predict',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({quan:q,loainha:loai,dientich:dt,sophong:phong,sotang:tang,rong:rong,phaplý:pl})
+    });
+    const d = await r.json();
+    return d.price || null;
+  } catch { return null; }
+}
+
+async function doCompare(){
+  const btn = document.querySelector('.btn-compare');
+  btn.textContent = '⏳ Đang phân tích...';
+  btn.disabled = true;
+
+  // Lấy dữ liệu
+  const A = {
+    ten: getStr('a-ten'), quan: getStr('a-quan'), loai: getStr('a-loai'),
+    dt: getVal('a-dt'), phong: getVal('a-phong'), tang: getVal('a-tang'),
+    rong: getVal('a-rong'), pl: getVal('a-pl'), giadang: getVal('a-giadang'),
+  };
+  const B = {
+    ten: getStr('b-ten'), quan: getStr('b-quan'), loai: getStr('b-loai'),
+    dt: getVal('b-dt'), phong: getVal('b-phong'), tang: getVal('b-tang'),
+    rong: getVal('b-rong'), pl: getVal('b-pl'), giadang: getVal('b-giadang'),
+  };
+
+  // Gọi API predict
+  const [pa, pb] = await Promise.all([
+    callPredict(A.quan,A.loai,A.dt,A.phong,A.tang,A.rong,A.pl),
+    callPredict(B.quan,B.loai,B.dt,B.phong,B.tang,B.rong,B.pl),
+  ]);
+
+  A.giaAI = pa || (A.giadang/A.dt*0.92);  // fallback estimate
+  B.giaAI = pb || (B.giadang/B.dt*0.92);
+
+  A.tongAI  = A.giaAI * A.dt;
+  B.tongAI  = B.giaAI * B.dt;
+  A.giamSo  = A.giadang/A.dt;
+  B.giamSo  = B.giadang/B.dt;
+  A.overVal = ((A.giamSo/A.giaAI)-1)*100;
+  B.overVal = ((B.giamSo/B.giaAI)-1)*100;
+  A.dtPerPhong = A.dt/A.phong;
+  B.dtPerPhong = B.dt/B.phong;
+
+  // Scoring (0–10 mỗi tiêu chí)
+  function score(a,b){
+    const rows = [
+      // [label, valA, valB, higherIsBetter, weight]
+      ['Giá/m² AI', a.giaAI, b.giaAI, false, 2],
+      ['Diện tích', a.dt, b.dt, true, 1.5],
+      ['DT/phòng ngủ', a.dtPerPhong, b.dtPerPhong, true, 1],
+      ['Số phòng', a.phong, b.phong, true, 1],
+      ['Số tầng', a.tang, b.tang, true, 0.8],
+      ['Chiều rộng', a.rong, b.rong, true, 1],
+      ['Pháp lý', a.pl, b.pl, true, 1.5],
+      ['Định giá so bán', -a.overVal, -b.overVal, true, 2], // âm overVal = đang bán rẻ hơn AI = tốt
+    ];
+    let sA=0, sB=0, totalW=0;
+    rows.forEach(([,va,vb,,w])=>{
+      totalW+=w;
+      if(va>vb) sA+=w; else if(vb>va) sB+=w; else{sA+=w/2;sB+=w/2;}
+    });
+    return {sA: Math.round(sA/totalW*10*10)/10, sB: Math.round(sB/totalW*10*10)/10, rows};
+  }
+  const {sA,sB,rows} = score(A,B);
+
+  // Winner
+  const winner = sA>sB ? 'A' : sB>sA ? 'B' : 'TIE';
+  const winName = winner==='A'?A.ten:winner==='B'?B.ten:'Hai căn tương đương';
+  document.getElementById('winner-icon').textContent = winner==='TIE'?'🤝':'🏆';
+  document.getElementById('winner-title').textContent = winner==='TIE'?'Hai căn nhà tương đương nhau!':winName+' chiếm ưu thế hơn';
+  document.getElementById('winner-desc').textContent = winner==='TIE'
+    ? 'Cả hai căn có điểm số gần bằng nhau. Quyết định phụ thuộc vào ưu tiên cá nhân của bạn.'
+    : `Điểm tổng hợp: ${winName} đạt ${winner==='A'?sA:sB}/10 điểm (đối thủ: ${winner==='A'?sB:sA}/10)`;
+
+  // Score cards
+  document.getElementById('score-grid').innerHTML = `
+    <div class="score-card ${winner==='A'?'winner-card':''}">
+      <div class="score-label" style="color:var(--c1);">🟢 ${A.ten}</div>
+      <div class="score-val" style="color:var(--c1);">${sA}</div>
+      <div class="score-desc">/ 10 điểm tổng hợp</div>
+    </div>
+    <div class="score-card ${winner==='B'?'winner-card':''}">
+      <div class="score-label" style="color:var(--c2);">🔵 ${B.ten}</div>
+      <div class="score-val" style="color:var(--c2);">${sB}</div>
+      <div class="score-desc">/ 10 điểm tổng hợp</div>
+    </div>`;
+
+  // Table headers
+  document.getElementById('th-a').textContent = A.ten;
+  document.getElementById('th-b').textContent = B.ten;
+
+  // Compare rows
+  const tableRows = [
+    ['Địa bàn', A.quan, B.quan, 'text'],
+    ['Loại hình', A.loai.split(',')[0], B.loai.split(',')[0], 'text'],
+    ['Giá AI ước tính/m²', fmt(A.giaAI)+' tr', fmt(B.giaAI)+' tr', A.giaAI<B.giaAI?'a':'b'],
+    ['Giá đang bán/m²', fmt(A.giamSo)+' tr', fmt(B.giamSo)+' tr', A.giamSo<B.giamSo?'a':'b'],
+    ['Tổng giá AI', fmt(A.tongAI)+' tr', fmt(B.tongAI)+' tr', A.tongAI<B.tongAI?'a':'b'],
+    ['Giá đang bán (tổng)', fmt(A.giadang)+' tr', fmt(B.giadang)+' tr', A.giadang<B.giadang?'a':'b'],
+    ['Định giá so bán', (A.overVal>=0?'+':'')+A.overVal.toFixed(1)+'%', (B.overVal>=0?'+':'')+B.overVal.toFixed(1)+'%', A.overVal<B.overVal?'a':'b'],
+    ['Diện tích', A.dt+'m²', B.dt+'m²', A.dt>B.dt?'a':'b'],
+    ['Số phòng ngủ', A.phong+' phòng', B.phong+' phòng', A.phong>B.phong?'a':'b'],
+    ['Số tầng', A.tang+' tầng', B.tang+' tầng', A.tang>B.tang?'a':'b'],
+    ['Chiều rộng', A.rong+'m', B.rong+'m', A.rong>B.rong?'a':'b'],
+    ['DT/phòng ngủ', A.dtPerPhong.toFixed(1)+'m²', B.dtPerPhong.toFixed(1)+'m²', A.dtPerPhong>B.dtPerPhong?'a':'b'],
+    ['Pháp lý', A.pl?'✅ Có sổ':'⏳ Chưa có', B.pl?'✅ Có sổ':'⏳ Chưa có', A.pl>B.pl?'a':B.pl>A.pl?'b':'tie'],
+  ];
+  let html='';
+  tableRows.forEach(([label,va,vb,win])=>{
+    const tagA = win==='a'?'<span class="tag tag-win-a">Tốt hơn</span>':win==='tie'?'<span class="tag tag-tie">Bằng nhau</span>':'';
+    const tagB = win==='b'?'<span class="tag tag-win-b">Tốt hơn</span>':win==='tie'?'<span class="tag tag-tie">Bằng nhau</span>':'';
+    const clsA = win==='a'?'winner-cell win-a':'';
+    const clsB = win==='b'?'winner-cell win-b':'';
+    html+=`<tr>
+      <td class="row-label">${label}</td>
+      <td class="${clsA}">${va} ${tagA}</td>
+      <td class="${clsB}">${vb} ${tagB}</td>
+      <td>${win==='a'?'🟢 A':win==='b'?'🔵 B':win==='tie'?'🤝 Bằng':'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('compare-tbody').innerHTML = html;
+
+  // Radar chart
+  if(radarChart) radarChart.destroy();
+  radarChart = new Chart(document.getElementById('radar-chart'),{
+    type:'radar',
+    data:{
+      labels:['Giá hợp lý','Diện tích','Số phòng','Số tầng','Chiều rộng','Pháp lý'],
+      datasets:[
+        {label:A.ten,data:[
+          Math.max(0,10-(A.overVal/5)),
+          Math.min(10,A.dt/10),
+          Math.min(10,A.phong*2),
+          Math.min(10,A.tang*2),
+          Math.min(10,A.rong*1.5),
+          A.pl*10
+        ],backgroundColor:'rgba(26,107,69,0.15)',borderColor:'var(--c1)',pointBackgroundColor:'var(--c1)'},
+        {label:B.ten,data:[
+          Math.max(0,10-(B.overVal/5)),
+          Math.min(10,B.dt/10),
+          Math.min(10,B.phong*2),
+          Math.min(10,B.tang*2),
+          Math.min(10,B.rong*1.5),
+          B.pl*10
+        ],backgroundColor:'rgba(37,99,235,0.15)',borderColor:'var(--c2)',pointBackgroundColor:'var(--c2)'},
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{r:{min:0,max:10,ticks:{stepSize:2,font:{size:10}}}}}
+  });
+
+  // Price chart
+  if(priceChart) priceChart.destroy();
+  priceChart = new Chart(document.getElementById('price-chart'),{
+    type:'bar',
+    data:{
+      labels:[A.ten, B.ten],
+      datasets:[
+        {label:'Giá AI ước tính (tr/m²)',data:[A.giaAI,B.giaAI],backgroundColor:['rgba(26,107,69,0.7)','rgba(37,99,235,0.7)'],borderRadius:6},
+        {label:'Giá đang bán (tr/m²)',data:[A.giamSo,B.giamSo],backgroundColor:['rgba(26,107,69,0.25)','rgba(37,99,235,0.25)'],borderRadius:6,borderWidth:2,borderColor:['var(--c1)','var(--c2)']},
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v+' tr'}}}}
+  });
+
+  document.getElementById('result-section').style.display='block';
+  document.getElementById('result-section').scrollIntoView({behavior:'smooth',block:'start'});
+  btn.textContent='⚖️ So sánh lại';
+  btn.disabled=false;
+}
+</script>
+</body>
+</html>
